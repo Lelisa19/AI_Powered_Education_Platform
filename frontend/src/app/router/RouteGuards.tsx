@@ -2,7 +2,12 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
-import { getDefaultDashboard } from '../../utils/authorization';
+import { useTenantContext } from '../providers/TenantProvider';
+import {
+    getAuthorizedRedirectPath,
+    getDefaultDashboard,
+    getLoginRoute,
+} from '../../utils/authorization';
 import type { PlatformRole, SchoolRole } from '../../types/auth';
 
 const LoadingScreen: React.FC = () => (
@@ -14,8 +19,13 @@ const LoadingScreen: React.FC = () => (
     </div>
 );
 
-export const ProtectedRoute: React.FC = () => {
-    const { isAuthenticated, isLoading } = useAuth();
+interface ProtectedRouteProps {
+    redirectTo?: string;
+}
+
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ redirectTo }) => {
+    const { isAuthenticated, isLoading, suppressReturnRedirect } = useAuth();
+    const { classification } = useTenantContext();
     const location = useLocation();
 
     if (isLoading) {
@@ -23,9 +33,14 @@ export const ProtectedRoute: React.FC = () => {
     }
 
     if (!isAuthenticated) {
+        const loginRoute = redirectTo ?? getLoginRoute(classification);
+        if (suppressReturnRedirect) {
+            return <Navigate to={loginRoute} replace />;
+        }
+
         // Preserve requested pathname, search parameters, and hash
         const returnUrl = location.pathname + location.search + location.hash;
-        return <Navigate to="/login" replace state={{ from: returnUrl }} />;
+        return <Navigate to={loginRoute} replace state={{ from: returnUrl }} />;
     }
 
     return <Outlet />;
@@ -33,13 +48,19 @@ export const ProtectedRoute: React.FC = () => {
 
 export const PublicRoute: React.FC = () => {
     const { user, isAuthenticated, isLoading } = useAuth();
+    const { classification } = useTenantContext();
+    const location = useLocation();
 
     if (isLoading) {
         return <LoadingScreen />;
     }
 
     if (isAuthenticated) {
-        return <Navigate to={getDefaultDashboard(user)} replace />;
+        const rawFrom = (location.state as { from?: unknown } | null)?.from;
+        const destination =
+            getAuthorizedRedirectPath(rawFrom, user, classification) ??
+            getDefaultDashboard(user, classification);
+        return <Navigate to={destination} replace />;
     }
 
     return <Outlet />;
@@ -52,10 +73,11 @@ interface RoleGuardProps {
 export const RoleGuard: React.FC<RoleGuardProps> = ({ roles }) => {
     const { user } = useAuth();
     const { hasAnyRole } = usePermissions();
+    const { classification } = useTenantContext();
     const location = useLocation();
 
     if (!hasAnyRole(roles)) {
-        const defaultDashboard = getDefaultDashboard(user);
+        const defaultDashboard = getDefaultDashboard(user, classification);
 
         // Prevent infinite redirect loops if the user lacks access to their own default dashboard
         if (location.pathname === defaultDashboard) {
@@ -81,6 +103,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
 }) => {
     const { user } = useAuth();
     const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions();
+    const { classification } = useTenantContext();
     const location = useLocation();
 
     let isAuthorized = false;
@@ -92,7 +115,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
     }
 
     if (!isAuthorized) {
-        const defaultDashboard = getDefaultDashboard(user);
+        const defaultDashboard = getDefaultDashboard(user, classification);
 
         // Prevent infinite redirect loops if the user lacks access to their own default dashboard
         if (location.pathname === defaultDashboard) {

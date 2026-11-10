@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary Platform Admin local testing
+src/modules/auth/services/platform-admin-dev-auth.ts
+

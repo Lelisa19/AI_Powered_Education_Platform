@@ -21,7 +21,7 @@ export const SchoolProfilePage: React.FC = () => {
                 {/* Basic Information Section */}
                 <div className="space-y-6 pt-0">
                     <div>
-                        <h3 className="text-lg font-medium leading-6 text-gray-900">Basic Information</h3>
+                        <h2 className="text-lg font-medium leading-6 text-gray-900">Basic Information</h2>
                         <p className="mt-1 text-sm text-gray-500">The core identity of your educational institution.</p>
                     </div>
 
@@ -79,7 +79,7 @@ export const SchoolProfilePage: React.FC = () => {
                 {/* Contact Details Section */}
                 <div className="space-y-6 pt-8">
                     <div>
-                        <h3 className="text-lg font-medium leading-6 text-gray-900">Contact Details</h3>
+                        <h2 className="text-lg font-medium leading-6 text-gray-900">Contact Details</h2>
                         <p className="mt-1 text-sm text-gray-500">How students, parents, and partners can reach the school.</p>
                     </div>
 
@@ -132,7 +132,7 @@ export const SchoolProfilePage: React.FC = () => {
                 {/* Location Section */}
                 <div className="space-y-6 pt-8">
                     <div>
-                        <h3 className="text-lg font-medium leading-6 text-gray-900">Location</h3>
+                        <h2 className="text-lg font-medium leading-6 text-gray-900">Location</h2>
                         <p className="mt-1 text-sm text-gray-500">The primary physical address of the institution.</p>
                     </div>
 

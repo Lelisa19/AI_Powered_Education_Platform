@@ -1,24 +1,16 @@
 // frontend/src/app/providers/TenantProvider.tsx
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { appConfig } from '../../config/app-config';
+import { classifyConfiguredDomain, normalizeDomainHostname } from '../../config/app-config';
 import { verifyDomain } from '../../services/api/tenant-service';
-import type { DomainClassification, TenantContextState } from '../../types/tenant.types';
+import type { TenantContextState } from '../../types/tenant.types';
 
 const TenantContext = createContext<TenantContextState | undefined>(undefined);
 
 export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, setState] = useState<TenantContextState>(() => {
-        const hostname = window.location.hostname.toLowerCase();
-        let classification: DomainClassification = 'PENDING_RESOLUTION';
-        let isResolving = false;
-
-        if (appConfig.domains.platform.includes(hostname)) {
-            classification = 'PLATFORM';
-        } else if (appConfig.domains.platformAdmin && hostname === appConfig.domains.platformAdmin) {
-            classification = 'PLATFORM_ADMIN';
-        } else {
-            isResolving = true;
-        }
+        const hostname = normalizeDomainHostname(window.location.hostname);
+        const classification = classifyConfiguredDomain(hostname);
+        const isResolving = classification === 'PENDING_RESOLUTION';
 
         return {
             hostname,

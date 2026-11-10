@@ -16,7 +16,7 @@ export const AccountantDashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">Payment Verification</h3>
+                        <h2 className="text-base font-semibold leading-6 text-gray-900">Payment Verification</h2>
                     </div>
                     <div className="p-6 text-center">
                         <p className="text-sm text-gray-500">Payment verification requests will appear here once payment processing and backend integration are implemented.</p>
@@ -25,7 +25,7 @@ export const AccountantDashboardPage: React.FC = () => {
 
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">Outstanding Balances</h3>
+                        <h2 className="text-base font-semibold leading-6 text-gray-900">Outstanding Balances</h2>
                     </div>
                     <div className="p-6 text-center">
                         <p className="text-sm text-gray-500">Financial records and outstanding balance reports will appear here once billing features and backend integration are implemented.</p>

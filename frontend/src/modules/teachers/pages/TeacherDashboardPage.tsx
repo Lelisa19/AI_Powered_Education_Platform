@@ -16,7 +16,7 @@ export const TeacherDashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">My Courses & Lessons</h3>
+                        <h2 className="text-base font-semibold leading-6 text-gray-900">My Courses & Lessons</h2>
                     </div>
                     <div className="p-6 text-center">
                         <p className="text-sm text-gray-500">Assigned courses and lesson plans will appear here once course assignment and backend integration are implemented.</p>
@@ -25,7 +25,7 @@ export const TeacherDashboardPage: React.FC = () => {
 
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">Pending Submissions</h3>
+                        <h2 className="text-base font-semibold leading-6 text-gray-900">Pending Submissions</h2>
                     </div>
                     <div className="p-6 text-center">
                         <p className="text-sm text-gray-500">Student assignments and submissions will appear here once grading features and backend integration are implemented.</p>

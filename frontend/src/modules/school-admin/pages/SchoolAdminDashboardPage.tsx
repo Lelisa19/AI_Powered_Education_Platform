@@ -16,7 +16,7 @@ export const SchoolAdminDashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">Students & Enrollments</h3>
+                        <h2 className="text-base font-semibold leading-6 text-gray-900">Students & Enrollments</h2>
                     </div>
                     <div className="p-6 text-center">
                         <p className="text-sm text-gray-500">Student records and enrollment directories will appear here once enrollment features and backend integration are implemented.</p>
@@ -25,7 +25,7 @@ export const SchoolAdminDashboardPage: React.FC = () => {
 
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">Faculty & Staff</h3>
+                        <h2 className="text-base font-semibold leading-6 text-gray-900">Faculty & Staff</h2>
                     </div>
                     <div className="p-6 text-center">
                         <p className="text-sm text-gray-500">Faculty and staff directories will appear here once staff management and backend integration are implemented.</p>
@@ -34,7 +34,7 @@ export const SchoolAdminDashboardPage: React.FC = () => {
 
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">Courses & Programs</h3>
+                        <h2 className="text-base font-semibold leading-6 text-gray-900">Courses & Programs</h2>
                     </div>
                     <div className="p-6 text-center">
                         <p className="text-sm text-gray-500">Courses and academic program details will appear here once academic management and backend integration are implemented.</p>

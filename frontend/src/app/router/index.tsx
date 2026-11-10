@@ -1,6 +1,6 @@
 // frontend/src/app/router/index.tsx
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useTenantContext } from '../providers/TenantProvider';
 
 // Shared Guards & Layouts
@@ -12,16 +12,21 @@ import { DomainUnavailablePage } from '../../modules/errors/pages/DomainUnavaila
 
 // Platform Pages
 import { PlatformLandingPage } from '../../modules/platform-website/pages/PlatformLandingPage';
-import { PlatformDashboardPage } from '../../modules/platform-admin/pages/PlatformDashboardPage';
-// Placeholder for future Platform Super Admin Login
-const PlatformLoginPage = () => <div className="p-8 text-center">Platform Admin Login (Pending Implementation)</div>;
+import { PlatformRoutes } from './platform.routes';
+import PlatformLoginPage from '../../modules/auth/pages/PlatformLoginPage';
+
+const AcceptPlatformInvitationPage = lazy(() =>
+  import('../../modules/platform-admin/pages/AcceptPlatformInvitationPage').then((module) => ({
+    default: module.AcceptPlatformInvitationPage,
+  }))
+);
 
 // School Pages
 import LoginPage from '../../modules/auth/pages/LoginPage';
 import RegisterPage from '../../modules/auth/pages/RegisterPage';
+import { StaffInvitePage } from '../../modules/auth/pages/StaffInvitePage';
 import { SchoolLandingPage } from '../../modules/website-builder/pages/SchoolLandingPage';
 // Placeholders for future School flows
-const StaffInvitePage = () => <div className="p-8 text-center">Staff Invitation & Activation (Pending Implementation)</div>;
 const ForgotPasswordPage = () => <div className="p-8 text-center">Forgot Password (Pending Implementation)</div>;
 
 // School Dashboards
@@ -57,43 +62,34 @@ const ResolvingScreen = () => (
   </div>
 );
 
-// --- 1. PLATFORM ROUTER ---
+// --- 1. PUBLIC PLATFORM ROUTER ---
 const PlatformRouter = () => (
   <Routes>
     <Route path="/" element={<PlatformLandingPage />} />
-
-    <Route element={<PublicRoute />}>
-      <Route path="/admin-login" element={<PlatformLoginPage />} />
-    </Route>
-
-    <Route element={<ProtectedRoute />}>
-      <Route element={<DashboardLayout />}>
-        <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route element={<RoleGuard roles={['PLATFORM_SUPER_ADMIN']} />}>
-          <Route path="/platform/*" element={<PlatformDashboardPage />} />
-        </Route>
-      </Route>
-    </Route>
-
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
 
-// --- 2. PLATFORM ADMIN ROUTER (Optional Dedicated Domain) ---
+// --- 2. PRIVATE PLATFORM ADMIN ROUTER ---
 const PlatformAdminRouter = () => (
   <Routes>
-    {/* Skip the public landing page on the dedicated admin domain */}
-    <Route path="/" element={<Navigate to="/admin-login" replace />} />
-
     <Route element={<PublicRoute />}>
-      <Route path="/admin-login" element={<PlatformLoginPage />} />
+      <Route path="/" element={<PlatformLoginPage />} />
+      <Route
+        path="/accept-invitation"
+        element={
+          <Suspense fallback={<ResolvingScreen />}>
+            <AcceptPlatformInvitationPage />
+          </Suspense>
+        }
+      />
     </Route>
 
-    <Route element={<ProtectedRoute />}>
+    <Route element={<ProtectedRoute redirectTo="/" />}>
       <Route element={<DashboardLayout />}>
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route element={<RoleGuard roles={['PLATFORM_SUPER_ADMIN']} />}>
-          <Route path="/platform/*" element={<PlatformDashboardPage />} />
+        <Route element={<RoleGuard roles={['PLATFORM_ADMIN']} />}>
+          <Route path="/dashboard/*" element={<PlatformRoutes />} />
         </Route>
       </Route>
     </Route>

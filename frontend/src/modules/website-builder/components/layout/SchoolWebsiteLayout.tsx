@@ -1,4 +1,3 @@
-// frontend/src/modules/website-builder/components/layout/SchoolWebsiteLayout.tsx
 import React, { type ReactNode } from 'react';
 import { SchoolHeader } from './SchoolHeader';
 import { SchoolFooter } from './SchoolFooter';

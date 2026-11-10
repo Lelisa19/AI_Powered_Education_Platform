@@ -31,13 +31,27 @@ export function usePermissions() {
         [user]
     );
 
+    const isPermissionRestricted = useCallback(
+        (permission: string) => authUtils.isPlatformPermissionRestricted(user, permission),
+        [user]
+    );
+
+    const canManageAdminRestrictions = useCallback(
+        (targetAdmin?: { id: string; isSuperAdmin: boolean }) =>
+            authUtils.canManageAdminRestrictions(user, targetAdmin),
+        [user]
+    );
+
     return {
         hasPermission,
         hasAnyPermission,
         hasAllPermissions,
         hasRole,
         hasAnyRole,
-        isPlatformAdmin: user?.accountType === 'PLATFORM',
+        isPermissionRestricted,
+        canManageAdminRestrictions,
+        isPlatformAdmin: authUtils.isPlatformAdmin(user),
+        isPlatformSuperAdmin: authUtils.isPlatformSuperAdmin(user),
         isSchoolUser: user?.accountType === 'SCHOOL',
     };
 }

@@ -1,4 +1,9 @@
-export type PlatformRole = 'PLATFORM_SUPER_ADMIN';
+import {
+    validatePlatformPermissionArray,
+    type PlatformPermissionKey,
+} from '../constants/permissions';
+
+export type PlatformRole = 'PLATFORM_ADMIN';
 export type SchoolRole = 'SCHOOL_ADMIN' | 'TEACHER' | 'STUDENT' | 'SCHOOL_ACCOUNTANT';
 export type Permission = string;
 
@@ -10,10 +15,19 @@ export interface BaseAuthenticatedUser {
     permissions: Permission[];
 }
 
+/**
+ * Authentication profile for platform administrators.
+ * Every platform administrator receives all platform permissions by default;
+ * optional `restrictedPermissions` lists individual platform permissions withheld
+ * from a non-Super-Admin administrator (omitted or empty means no restrictions).
+ */
 export interface PlatformAuthenticatedUser extends BaseAuthenticatedUser {
     accountType: 'PLATFORM';
     tenantId: null;
     roles: PlatformRole[];
+    isSuperAdmin: boolean;
+    permissions: PlatformPermissionKey[];
+    restrictedPermissions?: PlatformPermissionKey[];
 }
 
 export interface SchoolAuthenticatedUser extends BaseAuthenticatedUser {
@@ -43,7 +57,18 @@ export function parseAuthenticatedUser(data: unknown): AuthenticatedUser {
         throw new Error('Authentication Error: User profile data is malformed (expected an object).');
     }
 
-    const { id, email, firstName, lastName, accountType, tenantId, roles, permissions } = data;
+    const {
+        id,
+        email,
+        firstName,
+        lastName,
+        accountType,
+        tenantId,
+        roles,
+        permissions,
+        isSuperAdmin,
+        restrictedPermissions,
+    } = data;
 
     // 1. Validate identity fields (reject empty or whitespace-only strings)
     if (
@@ -69,8 +94,44 @@ export function parseAuthenticatedUser(data: unknown): AuthenticatedUser {
         if (tenantId !== null) {
             throw new Error('Authentication Security Violation: Platform accounts must not be bound to a tenant ID.');
         }
-        if (!Array.isArray(roles) || roles.length !== 1 || roles[0] !== 'PLATFORM_SUPER_ADMIN') {
-            throw new Error('Authentication Security Violation: Platform accounts must have exactly the PLATFORM_SUPER_ADMIN role.');
+        if (!Array.isArray(roles) || roles.length !== 1 || roles[0] !== 'PLATFORM_ADMIN') {
+            throw new Error('Authentication Security Violation: Platform accounts must have exactly the PLATFORM_ADMIN role.');
+        }
+        if (typeof isSuperAdmin !== 'boolean') {
+            throw new Error('Authentication Security Violation: Platform accounts must specify a boolean isSuperAdmin flag.');
+        }
+
+        const permissionsValidation = validatePlatformPermissionArray(permissions);
+        if (!permissionsValidation.valid) {
+            throw new Error(
+                'Authentication Security Violation: Platform account contains unrecognized or invalid permissions.'
+            );
+        }
+
+        let validatedRestrictedPermissions: PlatformPermissionKey[] | undefined;
+        if (restrictedPermissions !== undefined) {
+            const restrictedValidation = validatePlatformPermissionArray(restrictedPermissions);
+            if (!restrictedValidation.valid) {
+                if (restrictedValidation.reason === 'NOT_ARRAY') {
+                    throw new Error(
+                        'Authentication Error: Restricted permissions must be an array of valid platform permission keys.'
+                    );
+                }
+                if (restrictedValidation.reason === 'DUPLICATE') {
+                    throw new Error(
+                        'Authentication Error: Duplicate restricted permissions detected in user profile.'
+                    );
+                }
+                throw new Error(
+                    'Authentication Security Violation: Restricted permissions contain invalid or non-platform permission keys.'
+                );
+            }
+            if (isSuperAdmin && restrictedValidation.keys.length > 0) {
+                throw new Error(
+                    'Authentication Security Violation: Super Admin accounts cannot have permission restrictions.'
+                );
+            }
+            validatedRestrictedPermissions = restrictedValidation.keys;
         }
 
         return {
@@ -81,7 +142,9 @@ export function parseAuthenticatedUser(data: unknown): AuthenticatedUser {
             accountType: 'PLATFORM',
             tenantId: null,
             roles: roles as PlatformRole[],
-            permissions,
+            isSuperAdmin,
+            permissions: permissionsValidation.keys,
+            restrictedPermissions: validatedRestrictedPermissions,
         };
     }
 
@@ -118,4 +181,3 @@ export function parseAuthenticatedUser(data: unknown): AuthenticatedUser {
 
     throw new Error(`Authentication Error: Unsupported accountType '${String(accountType)}'.`);
 }
-
