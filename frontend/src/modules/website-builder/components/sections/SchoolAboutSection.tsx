@@ -9,7 +9,13 @@ export interface SchoolAboutSectionProps {
 
 export const SchoolAboutSection: React.FC<SchoolAboutSectionProps> = ({ about, identity }) => {
     const hasMission = Boolean(about.mission && about.mission.trim().length > 0);
-    const sectionTitle = identity?.name ? `About ${identity.name}` : 'About Our School';
+    const descriptionParagraphs = (about.description ?? '')
+        .split('\n')
+        .map((paragraph) => paragraph.trim())
+        .filter((paragraph) => paragraph.length > 0);
+    const customHeading = about.heading?.trim();
+    const sectionTitle =
+        customHeading || (identity?.name ? `About ${identity.name}` : 'About Our School');
 
     return (
         <section
@@ -34,14 +40,19 @@ export const SchoolAboutSection: React.FC<SchoolAboutSectionProps> = ({ about, i
 
                 <div className="mx-auto mt-12 max-w-4xl space-y-8">
                     {/* Primary School Description */}
-                    <div className="text-base sm:text-lg text-gray-700 leading-relaxed space-y-4">
-                        {about.description
-                            .split('\n')
-                            .filter(paragraph => paragraph.trim().length > 0)
-                            .map((paragraph, index) => (
-                                <p key={index}>{paragraph.trim()}</p>
+                    {descriptionParagraphs.length > 0 ? (
+                        <div className="text-base sm:text-lg text-gray-700 leading-relaxed space-y-4">
+                            {descriptionParagraphs.map((paragraph, index) => (
+                                <p key={index}>{paragraph}</p>
                             ))}
-                    </div>
+                        </div>
+                    ) : !hasMission ? (
+                        <div className="mx-auto max-w-md rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+                            <p className="text-sm">
+                                School introduction and background details will appear here once published.
+                            </p>
+                        </div>
+                    ) : null}
 
                     {/* Optional Mission Statement Callout */}
                     {hasMission && (

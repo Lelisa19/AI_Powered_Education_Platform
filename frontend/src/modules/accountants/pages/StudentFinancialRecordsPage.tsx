@@ -1,0 +1,52 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { DashboardPageHeader } from '../../../components/Dashboards/DashboardPageHeader';
+
+export const StudentFinancialRecordsPage: React.FC = () => {
+    return (
+        <div className="mx-auto max-w-7xl space-y-6">
+            <DashboardPageHeader
+                title="Student Financial Records"
+                subtitle="Inspect individual student fee obligations, payment histories, and outstanding balances."
+            />
+
+            <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50/50 p-8 text-center sm:p-12">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                    <svg
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                        />
+                    </svg>
+                </div>
+                <h2 className="text-base font-semibold text-gray-900">
+                    Student Financial Directory & Ledgers
+                </h2>
+                <span className="mt-1 inline-flex items-center rounded-full border border-blue-300 bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                    Under Development (Step 5.11.4)
+                </span>
+                <p className="mx-auto mt-3 max-w-lg text-sm text-gray-600">
+                    Student fee assignment management, outstanding balance calculations, partial payment
+                    breakdowns, and receipt downloads are scheduled for implementation in Step 5.11.4.
+                </p>
+                <div className="mt-6">
+                    <Link
+                        to="/accountant"
+                        className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                    >
+                        Return to Financial Dashboard
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+};
+

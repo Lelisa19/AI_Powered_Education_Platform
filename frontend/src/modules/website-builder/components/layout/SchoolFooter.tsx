@@ -1,48 +1,41 @@
 // frontend/src/modules/website-builder/components/layout/SchoolFooter.tsx
-import React from 'react';
+import React, { useState } from 'react';
+import { sanitizeStrictHttpsUrl } from '../../../../utils/branding';
 import type { SchoolIdentity, SchoolContactInfo, SchoolSocialLinks } from '../../types/website.types';
 
 export interface SchoolFooterProps {
     identity: SchoolIdentity;
     contact: SchoolContactInfo;
     socialLinks?: SchoolSocialLinks;
+    previewMode?: boolean;
 }
 
-/**
- * Validates that a given URL string is non-empty, well-formed, and strictly uses the https: protocol.
- * Rejects empty strings, malformed URLs, javascript:, http:, and other non-https protocols.
- */
-const isValidHttpsUrl = (urlString?: string): boolean => {
-    if (!urlString || typeof urlString !== 'string') {
-        return false;
-    }
-    const trimmed = urlString.trim();
-    if (!trimmed) {
-        return false;
-    }
-    try {
-        const parsed = new URL(trimmed);
-        return parsed.protocol === 'https:';
-    } catch {
-        return false;
-    }
-};
-
-export const SchoolFooter: React.FC<SchoolFooterProps> = ({ identity, contact, socialLinks }) => {
+export const SchoolFooter: React.FC<SchoolFooterProps> = ({
+    identity,
+    contact,
+    socialLinks,
+    previewMode = false,
+}) => {
     const currentYear = new Date().getFullYear();
+    const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
 
-    // Filter social links to only those that have valid HTTPS URLs
+    // Filter social links to strictly credential-free HTTPS URLs
     const validSocialLinks = [
-        { name: 'Facebook', url: socialLinks?.facebook },
-        { name: 'Twitter', url: socialLinks?.twitter },
-        { name: 'Instagram', url: socialLinks?.instagram },
-        { name: 'LinkedIn', url: socialLinks?.linkedin },
-        { name: 'YouTube', url: socialLinks?.youtube },
-    ].filter((link): link is { name: string; url: string } => isValidHttpsUrl(link.url));
+        { name: 'Facebook', url: sanitizeStrictHttpsUrl(socialLinks?.facebook) },
+        { name: 'Twitter', url: sanitizeStrictHttpsUrl(socialLinks?.twitter) },
+        { name: 'Instagram', url: sanitizeStrictHttpsUrl(socialLinks?.instagram) },
+        { name: 'LinkedIn', url: sanitizeStrictHttpsUrl(socialLinks?.linkedin) },
+        { name: 'YouTube', url: sanitizeStrictHttpsUrl(socialLinks?.youtube) },
+    ].filter((link): link is { name: string; url: string } => Boolean(link.url));
 
     const hasPhone = Boolean(contact.phone && contact.phone.trim() !== '');
-    const hasAddress = Boolean(contact.address && contact.address.trim() !== '');
+    const formattedAddress = [contact.address, contact.city, contact.country]
+        .map((segment) => segment?.trim())
+        .filter((segment): segment is string => Boolean(segment))
+        .join(', ');
+    const hasAddress = formattedAddress.length > 0;
     const hasEmail = Boolean(contact.email && contact.email.trim() !== '');
+    const showLogo = Boolean(identity.logoUrl && failedLogoUrl !== identity.logoUrl);
 
     return (
         <footer className="border-t border-gray-800 bg-gray-900 text-gray-300">
@@ -51,16 +44,20 @@ export const SchoolFooter: React.FC<SchoolFooterProps> = ({ identity, contact, s
                     {/* Column 1: School Identity */}
                     <div>
                         <div className="flex items-center space-x-3">
-                            {identity.logoUrl ? (
+                            {showLogo ? (
                                 <img
                                     src={identity.logoUrl}
                                     alt={`${identity.name} Logo`}
+                                    onError={() => setFailedLogoUrl(identity.logoUrl ?? null)}
                                     className="h-10 w-auto max-w-[140px] object-contain brightness-200"
                                 />
                             ) : (
                                 <div
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white shadow-sm"
-                                    style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold shadow-sm"
+                                    style={{
+                                        backgroundColor: 'var(--school-primary, #1E40AF)',
+                                        color: 'var(--school-primary-foreground, #FFFFFF)',
+                                    }}
                                     aria-hidden="true"
                                 >
                                     {identity.name ? identity.name.trim().charAt(0).toUpperCase() : 'S'}
@@ -106,7 +103,7 @@ export const SchoolFooter: React.FC<SchoolFooterProps> = ({ identity, contact, s
                             {hasAddress && (
                                 <li>
                                     <span className="text-gray-300 font-medium">Address: </span>
-                                    <span>{contact.address!.trim()}</span>
+                                    <span>{formattedAddress}</span>
                                 </li>
                             )}
                         </ul>
@@ -125,6 +122,10 @@ export const SchoolFooter: React.FC<SchoolFooterProps> = ({ identity, contact, s
                                             href={item.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            onClick={(e) => {
+                                                if (previewMode) e.preventDefault();
+                                            }}
+                                            title={previewMode ? `${item.name} link (${item.url})` : undefined}
                                             className="inline-flex items-center rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-700 hover:text-white transition-colors"
                                         >
                                             {item.name}

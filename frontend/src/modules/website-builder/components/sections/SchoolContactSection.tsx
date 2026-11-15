@@ -10,7 +10,11 @@ export interface SchoolContactSectionProps {
 export const SchoolContactSection: React.FC<SchoolContactSectionProps> = ({ contact, identity }) => {
     const hasEmail = Boolean(contact.email && contact.email.trim() !== '');
     const hasPhone = Boolean(contact.phone && contact.phone.trim() !== '');
-    const hasAddress = Boolean(contact.address && contact.address.trim() !== '');
+    const formattedAddress = [contact.address, contact.city, contact.country]
+        .map((segment) => segment?.trim())
+        .filter((segment): segment is string => Boolean(segment))
+        .join(', ');
+    const hasAddress = formattedAddress.length > 0;
 
     const headingText = identity?.name ? `Contact ${identity.name}` : 'Contact Information';
 
@@ -44,8 +48,11 @@ export const SchoolContactSection: React.FC<SchoolContactSectionProps> = ({ cont
                         {hasEmail && (
                             <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-gray-50/50 p-6 text-center shadow-sm">
                                 <div
-                                    className="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-sm mb-4"
-                                    style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                    className="flex h-12 w-12 items-center justify-center rounded-xl shadow-sm mb-4"
+                                    style={{
+                                        backgroundColor: 'var(--school-primary, #1E40AF)',
+                                        color: 'var(--school-primary-foreground, #FFFFFF)',
+                                    }}
                                     aria-hidden="true"
                                 >
                                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,8 +80,11 @@ export const SchoolContactSection: React.FC<SchoolContactSectionProps> = ({ cont
                         {hasPhone && (
                             <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-gray-50/50 p-6 text-center shadow-sm">
                                 <div
-                                    className="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-sm mb-4"
-                                    style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                    className="flex h-12 w-12 items-center justify-center rounded-xl shadow-sm mb-4"
+                                    style={{
+                                        backgroundColor: 'var(--school-primary, #1E40AF)',
+                                        color: 'var(--school-primary-foreground, #FFFFFF)',
+                                    }}
                                     aria-hidden="true"
                                 >
                                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -102,8 +112,11 @@ export const SchoolContactSection: React.FC<SchoolContactSectionProps> = ({ cont
                         {hasAddress && (
                             <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-gray-50/50 p-6 text-center shadow-sm sm:col-span-2 lg:col-span-1">
                                 <div
-                                    className="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-sm mb-4"
-                                    style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                    className="flex h-12 w-12 items-center justify-center rounded-xl shadow-sm mb-4"
+                                    style={{
+                                        backgroundColor: 'var(--school-primary, #1E40AF)',
+                                        color: 'var(--school-primary-foreground, #FFFFFF)',
+                                    }}
                                     aria-hidden="true"
                                 >
                                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,7 +137,7 @@ export const SchoolContactSection: React.FC<SchoolContactSectionProps> = ({ cont
                                 <h3 className="text-base font-semibold text-gray-900">Campus Location</h3>
                                 <p className="mt-2 text-sm text-gray-600">Administrative offices</p>
                                 <address className="mt-4 not-italic text-sm text-gray-700 leading-relaxed">
-                                    {contact.address!.trim()}
+                                    {formattedAddress}
                                 </address>
                             </div>
                         )}

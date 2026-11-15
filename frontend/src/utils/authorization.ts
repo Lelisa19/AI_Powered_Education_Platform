@@ -3,8 +3,11 @@ import type { DomainClassification } from '../types/tenant.types';
 import {
     ALL_PLATFORM_PERMISSIONS,
     PLATFORM_PERMISSIONS,
+    SCHOOL_ADMIN_ROUTE_PERMISSIONS,
+    SCHOOL_ACCOUNTANT_ROUTE_PERMISSIONS,
     isPlatformPermissionKey,
     validatePlatformPermissionArray,
+    type PermissionKey,
     type PlatformPermissionKey,
 } from '../constants/permissions';
 
@@ -184,6 +187,92 @@ const PLATFORM_ROUTE_PERMISSION_MAP: Readonly<Record<string, PlatformPermissionK
     '/dashboard/support': PLATFORM_PERMISSIONS.SUPPORT_MANAGE,
 };
 
+interface SchoolRouteAccessRule {
+    role: SchoolRole;
+    anyPermissions?: readonly PermissionKey[];
+    allPermissions?: readonly PermissionKey[];
+}
+
+const SCHOOL_ROUTE_ACCESS_MAP: Readonly<Record<string, SchoolRouteAccessRule>> = {
+    '/admin': { role: 'SCHOOL_ADMIN' },
+    '/admin/profile': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.PROFILE,
+    },
+    '/admin/website': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.WEBSITE,
+    },
+    '/admin/academic-structure': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.ACADEMIC_STRUCTURE,
+    },
+    '/admin/settings': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.SETTINGS,
+    },
+    '/admin/staff': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.STAFF,
+    },
+    '/admin/teachers': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.TEACHERS,
+    },
+    '/admin/students': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.STUDENTS,
+    },
+    '/admin/programs-courses': {
+        role: 'SCHOOL_ADMIN',
+        anyPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.PROGRAMS_COURSES,
+    },
+    '/admin/finance': {
+        role: 'SCHOOL_ADMIN',
+        allPermissions: SCHOOL_ADMIN_ROUTE_PERMISSIONS.FINANCE,
+    },
+    '/teacher': { role: 'TEACHER' },
+    '/student': { role: 'STUDENT' },
+    '/accountant': { role: 'SCHOOL_ACCOUNTANT' },
+    '/accountant/payments': {
+        role: 'SCHOOL_ACCOUNTANT',
+        anyPermissions: SCHOOL_ACCOUNTANT_ROUTE_PERMISSIONS.PAYMENTS,
+    },
+    '/accountant/students': {
+        role: 'SCHOOL_ACCOUNTANT',
+        allPermissions: SCHOOL_ACCOUNTANT_ROUTE_PERMISSIONS.STUDENTS,
+    },
+    '/accountant/reports': {
+        role: 'SCHOOL_ACCOUNTANT',
+        anyPermissions: SCHOOL_ACCOUNTANT_ROUTE_PERMISSIONS.REPORTS,
+    },
+};
+
+const SCHOOL_ROLE_LABELS: Readonly<Record<SchoolRole, string>> = {
+    SCHOOL_ADMIN: 'School Admin',
+    TEACHER: 'Teacher',
+    STUDENT: 'Student',
+    SCHOOL_ACCOUNTANT: 'School Accountant',
+};
+
+export function formatAuthenticatedUserRoles(user: AuthenticatedUser | null): string | null {
+    if (!user) return null;
+
+    if (user.accountType === 'PLATFORM') {
+        if (!isPlatformAdmin(user)) return null;
+        return user.isSuperAdmin ? 'Super Admin' : 'Platform Admin';
+    }
+
+    if (user.accountType === 'SCHOOL') {
+        const labels = user.roles
+            .map((role) => SCHOOL_ROLE_LABELS[role])
+            .filter((label): label is string => Boolean(label));
+        return labels.length > 0 ? labels.join(', ') : null;
+    }
+
+    return null;
+}
+
 /**
  * Validates that a preserved return URL is a safe relative application route.
  */
@@ -203,14 +292,30 @@ export function getSafeRedirectPath(from: unknown): string | null {
     return trimmed;
 }
 
+function matchesVerifiedSchoolTenant(
+    userTenantId: string,
+    expectedTenantId?: string | null
+): boolean {
+    if (typeof userTenantId !== 'string' || userTenantId.trim() === '') {
+        return false;
+    }
+
+    if (expectedTenantId === undefined) {
+        return true;
+    }
+
+    return typeof expectedTenantId === 'string' && expectedTenantId.trim() !== '' && userTenantId === expectedTenantId;
+}
+
 /**
  * Validates a preserved return URL against the newly authenticated user's domain,
- * valid route allowlist, and effective permissions before allowing post-login redirection.
+ * tenant context, valid route allowlist, role, and effective permissions before allowing post-login redirection.
  */
 export function getAuthorizedRedirectPath(
     from: unknown,
     user: AuthenticatedUser | null,
-    classification?: DomainClassification
+    classification?: DomainClassification,
+    expectedTenantId?: string | null
 ): string | null {
     if (!user) return null;
 
@@ -244,9 +349,37 @@ export function getAuthorizedRedirectPath(
         if (classification && classification !== 'SCHOOL') {
             return null;
         }
+        if (!matchesVerifiedSchoolTenant(user.tenantId, expectedTenantId)) {
+            return null;
+        }
         if (normalizedPath === '/dashboard' || normalizedPath.startsWith('/dashboard/')) {
             return null;
         }
+        if (!Object.prototype.hasOwnProperty.call(SCHOOL_ROUTE_ACCESS_MAP, normalizedPath)) {
+            return null;
+        }
+
+        const routeRule = SCHOOL_ROUTE_ACCESS_MAP[normalizedPath];
+        if (!hasRole(user, routeRule.role)) {
+            return null;
+        }
+
+        if (
+            routeRule.anyPermissions &&
+            routeRule.anyPermissions.length > 0 &&
+            !hasAnyPermission(user, [...routeRule.anyPermissions])
+        ) {
+            return null;
+        }
+
+        if (
+            routeRule.allPermissions &&
+            routeRule.allPermissions.length > 0 &&
+            !hasAllPermissions(user, [...routeRule.allPermissions])
+        ) {
+            return null;
+        }
+
         return safePath;
     }
 
@@ -269,7 +402,8 @@ export function getLoginRoute(classification?: DomainClassification): string {
  */
 export function getDefaultDashboard(
     user: AuthenticatedUser | null,
-    classification?: DomainClassification
+    classification?: DomainClassification,
+    expectedTenantId?: string | null
 ): string {
     if (!user) return getLoginRoute(classification);
 
@@ -285,6 +419,9 @@ export function getDefaultDashboard(
 
     if (user.accountType === 'SCHOOL') {
         if (classification === 'PLATFORM' || classification === 'PLATFORM_ADMIN') {
+            return '/unauthorized';
+        }
+        if (!matchesVerifiedSchoolTenant(user.tenantId, expectedTenantId)) {
             return '/unauthorized';
         }
         // Priority 1: Admin

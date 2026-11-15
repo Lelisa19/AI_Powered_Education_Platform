@@ -1,5 +1,7 @@
 // frontend/src/modules/website-builder/pages/SchoolLandingPage.tsx
 import React, { useState, useEffect } from 'react';
+import { useTenantContext } from '../../../app/providers/TenantProvider';
+import { useTheme } from '../../../app/providers/ThemeProvider';
 import type { SchoolWebsiteConfig } from '../types/website.types';
 import { getSchoolWebsiteConfig } from '../services/website-service';
 import { SchoolWebsiteLayout } from '../components/layout/SchoolWebsiteLayout';
@@ -9,6 +11,8 @@ import { SchoolProgramsSection } from '../components/sections/SchoolProgramsSect
 import { SchoolContactSection } from '../components/sections/SchoolContactSection';
 
 export const SchoolLandingPage: React.FC = () => {
+    const { classification, tenantId } = useTenantContext();
+    const { applyVerifiedSchoolTheme } = useTheme();
     const [config, setConfig] = useState<SchoolWebsiteConfig | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [hasError, setHasError] = useState<boolean>(false);
@@ -24,6 +28,12 @@ export const SchoolLandingPage: React.FC = () => {
                     setConfig(data);
                     setHasError(false);
                     setIsLoading(false);
+                    if (classification === 'SCHOOL' && tenantId) {
+                        applyVerifiedSchoolTheme(tenantId, {
+                            identity: data.identity,
+                            branding: data.branding,
+                        });
+                    }
                 }
             } catch {
                 if (isMounted) {
@@ -39,7 +49,7 @@ export const SchoolLandingPage: React.FC = () => {
         return () => {
             isMounted = false;
         };
-    }, [retryTrigger]);
+    }, [retryTrigger, classification, tenantId, applyVerifiedSchoolTheme]);
 
     const handleRetry = () => {
         setIsLoading(true);
@@ -114,7 +124,10 @@ export const SchoolLandingPage: React.FC = () => {
         <SchoolWebsiteLayout config={config}>
             <SchoolHeroSection hero={config.hero} />
             <SchoolAboutSection about={config.about} identity={config.identity} />
-            <SchoolProgramsSection programs={config.featuredPrograms} />
+            <SchoolProgramsSection
+                programs={config.featuredPrograms}
+                heading={config.featuredProgramsHeading}
+            />
             <SchoolContactSection contact={config.contact} identity={config.identity} />
         </SchoolWebsiteLayout>
     );

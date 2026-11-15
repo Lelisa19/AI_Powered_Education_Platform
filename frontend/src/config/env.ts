@@ -14,4 +14,11 @@ export const env = {
     // Strictly development-only flag for temporary Platform Admin frontend testing.
     ENABLE_PLATFORM_ADMIN_DEV_AUTH:
         isDev && import.meta.env.VITE_ENABLE_PLATFORM_ADMIN_DEV_AUTH === 'true',
+    // Strictly development-only flag for temporary School Admin frontend testing.
+    ENABLE_SCHOOL_DEV_AUTH:
+        isDev && import.meta.env.VITE_ENABLE_SCHOOL_DEV_AUTH === 'true',
+    // Dedicated development exact hostname for School Admin testing (e.g., "school.localhost")
+    DEV_SCHOOL_DOMAIN:
+        (import.meta.env.VITE_DEV_SCHOOL_DOMAIN as string) ||
+        (isDev ? 'school.localhost' : ''),
 };

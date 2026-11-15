@@ -2,9 +2,35 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { classifyConfiguredDomain, normalizeDomainHostname } from '../../config/app-config';
 import { verifyDomain } from '../../services/api/tenant-service';
+import type { SchoolBranding } from '../../types/school.types';
 import type { TenantContextState } from '../../types/tenant.types';
+import { sanitizeBrandHexColor, sanitizeSchoolAssetUrl } from '../../utils/branding';
 
 const TenantContext = createContext<TenantContextState | undefined>(undefined);
+
+function sanitizeOptionalName(raw: unknown): string | null {
+    if (typeof raw !== 'string') return null;
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+function sanitizeOptionalBranding(raw: unknown): SchoolBranding | null {
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+        return null;
+    }
+
+    const candidate = raw as { primaryColor?: unknown; secondaryColor?: unknown };
+    const primaryColor = sanitizeBrandHexColor(candidate.primaryColor);
+    if (!primaryColor) {
+        return null;
+    }
+
+    const secondaryColor = sanitizeBrandHexColor(candidate.secondaryColor);
+    return {
+        primaryColor,
+        ...(secondaryColor ? { secondaryColor } : {}),
+    };
+}
 
 export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, setState] = useState<TenantContextState>(() => {
@@ -16,6 +42,10 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             hostname,
             classification,
             tenantId: null,
+            schoolName: null,
+            schoolLogoUrl: null,
+            schoolFaviconUrl: null,
+            schoolBranding: null,
             isResolving,
             allowsPublicRegistration: false, // Default to fail-closed
         };
@@ -35,6 +65,10 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                             ...prev,
                             classification: 'SCHOOL',
                             tenantId: verifiedTenantId,
+                            schoolName: sanitizeOptionalName(response.schoolName),
+                            schoolLogoUrl: sanitizeSchoolAssetUrl(response.schoolLogoUrl),
+                            schoolFaviconUrl: sanitizeSchoolAssetUrl(response.schoolFaviconUrl),
+                            schoolBranding: sanitizeOptionalBranding(response.branding),
                             allowsPublicRegistration: response.allowsPublicRegistration ?? false,
                             isResolving: false
                         }));
@@ -43,6 +77,10 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                             ...prev,
                             classification: 'UNKNOWN',
                             tenantId: null,
+                            schoolName: null,
+                            schoolLogoUrl: null,
+                            schoolFaviconUrl: null,
+                            schoolBranding: null,
                             isResolving: false
                         }));
                     }
@@ -53,6 +91,10 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                         ...prev,
                         classification: 'UNKNOWN',
                         tenantId: null,
+                        schoolName: null,
+                        schoolLogoUrl: null,
+                        schoolFaviconUrl: null,
+                        schoolBranding: null,
                         isResolving: false
                     }));
                 }

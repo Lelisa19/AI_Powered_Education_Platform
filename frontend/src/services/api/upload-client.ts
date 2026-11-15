@@ -1,25 +1,18 @@
 import axios from 'axios';
 import type { AxiosRequestConfig, AxiosProgressEvent } from 'axios';
-import { normalizeApiError } from './api-error';
+import { env } from '../../config/env';
+import { applyCommonApiInterceptors } from './api-client';
 
-export const uploadApiClient = axios.create({
-    baseURL: (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000/api',
-    timeout: 60000,
-    headers: {
-        'Accept': 'application/json',
-        // Content-Type is intentionally omitted so the browser automatically 
-        // sets 'multipart/form-data' with the correct boundary based on the FormData payload.
-    },
-});
-
-uploadApiClient.interceptors.request.use(
-    (config) => config,
-    (error) => Promise.reject(normalizeApiError(error))
-);
-
-uploadApiClient.interceptors.response.use(
-    (response) => response,
-    (error) => Promise.reject(normalizeApiError(error))
+export const uploadApiClient = applyCommonApiInterceptors(
+    axios.create({
+        baseURL: env.API_BASE_URL,
+        timeout: 60000,
+        headers: {
+            'Accept': 'application/json',
+            // Content-Type is intentionally omitted so the browser automatically
+            // sets 'multipart/form-data' with the correct boundary based on the FormData payload.
+        },
+    })
 );
 
 export interface UploadOptions extends Omit<AxiosRequestConfig, 'data' | 'url'> {

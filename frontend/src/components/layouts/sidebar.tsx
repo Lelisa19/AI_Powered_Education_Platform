@@ -1,7 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { getNavigationItems } from '../../config/navigation';
+import type { NavItem } from '../../constants/navigation';
 import { useTenantContext } from '../../app/providers/TenantProvider';
+import { useTheme } from '../../app/providers/ThemeProvider';
 import { usePermissions } from '../../hooks/usePermissions';
 
 interface SidebarProps {
@@ -9,6 +11,28 @@ interface SidebarProps {
     isOpen: boolean;
     isDesktop: boolean;
     onClose: (restoreFocus?: boolean) => void;
+}
+
+interface SidebarNavGroup {
+    section: string | null;
+    items: NavItem[];
+}
+
+function groupNavItemsBySection(items: NavItem[]): SidebarNavGroup[] {
+    const groups: SidebarNavGroup[] = [];
+
+    for (const item of items) {
+        const sectionName = item.section ?? null;
+        const existingGroup = groups.find((group) => group.section === sectionName);
+
+        if (existingGroup) {
+            existingGroup.items.push(item);
+        } else {
+            groups.push({ section: sectionName, items: [item] });
+        }
+    }
+
+    return groups;
 }
 
 const FOCUSABLE_SELECTOR = [
@@ -31,13 +55,25 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ id, isOpen, isDesktop, onClose }) => {
-    const { classification } = useTenantContext();
+    const { classification, tenantId, hostname, schoolName, schoolLogoUrl } = useTenantContext();
+    const { isSchoolThemeActive, schoolTheme } = useTheme();
     const { hasAnyRole, hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions();
     const asideRef = useRef<HTMLElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
 
     const isMobileOpen = !isDesktop && isOpen;
     const isMobileClosed = !isDesktop && !isOpen;
+    const isVerifiedSchoolPortal = classification === 'SCHOOL' && Boolean(tenantId);
+    const resolvedSchoolLogo = isVerifiedSchoolPortal
+        ? schoolTheme.logoUrl || schoolLogoUrl
+        : null;
+    const schoolDisplayName = isVerifiedSchoolPortal
+        ? schoolTheme.schoolName || schoolName || hostname || 'Verified School'
+        : null;
+    const showSchoolLogo = Boolean(
+        resolvedSchoolLogo && failedLogoUrl !== resolvedSchoolLogo
+    );
 
     useEffect(() => {
         if (!isMobileOpen) return;
@@ -111,27 +147,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ id, isOpen, isDesktop, onClose
 
     const navItems = getNavigationItems(classification);
 
-    const filteredNavItems = navItems.filter((item) => {
-        let hasRequiredRole = true;
-        let hasRequiredPermission = true;
+    const filteredNavItems = useMemo(
+        () =>
+            navItems.filter((item) => {
+                let hasRequiredRole = true;
+                let hasRequiredPermission = true;
 
-        // Check role requirements
-        if (item.roles && item.roles.length > 0) {
-            hasRequiredRole = hasAnyRole(item.roles);
-        }
+                // Check role requirements
+                if (item.roles && item.roles.length > 0) {
+                    hasRequiredRole = hasAnyRole(item.roles);
+                }
 
-        // Check permission requirements
-        if (item.permission) {
-            hasRequiredPermission = hasPermission(item.permission);
-        } else if (item.permissions && item.permissions.length > 0) {
-            hasRequiredPermission = item.requireAll
-                ? hasAllPermissions(item.permissions)
-                : hasAnyPermission(item.permissions);
-        }
+                // Check permission requirements
+                if (item.permission) {
+                    hasRequiredPermission = hasPermission(item.permission);
+                } else if (item.permissions && item.permissions.length > 0) {
+                    hasRequiredPermission = item.requireAll
+                        ? hasAllPermissions(item.permissions)
+                        : hasAnyPermission(item.permissions);
+                }
 
-        // Both conditions must pass if both are defined
-        return hasRequiredRole && hasRequiredPermission;
-    });
+                // Both conditions must pass if both are defined
+                return hasRequiredRole && hasRequiredPermission;
+            }),
+        [navItems, hasAnyRole, hasPermission, hasAnyPermission, hasAllPermissions]
+    );
+
+    const navGroups = useMemo(() => groupNavItemsBySection(filteredNavItems), [filteredNavItems]);
 
     return (
         <>
@@ -156,8 +198,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ id, isOpen, isDesktop, onClose
                     isOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
-                <div className="flex h-16 items-center justify-between border-b border-gray-800 px-4 lg:justify-center">
-                    <span className="text-xl font-bold tracking-wider">EduPlatform</span>
+                <div className="flex h-16 items-center justify-between border-b border-gray-800 px-4">
+                    {classification === 'PLATFORM_ADMIN' ? (
+                        <span className="text-xl font-bold tracking-wider lg:mx-auto">EduPlatform</span>
+                    ) : isVerifiedSchoolPortal && schoolDisplayName ? (
+                        <div className="flex min-w-0 items-center gap-2.5">
+                            {showSchoolLogo ? (
+                                <img
+                                    src={resolvedSchoolLogo!}
+                                    alt={`${schoolDisplayName} Logo`}
+                                    onError={() => setFailedLogoUrl(resolvedSchoolLogo)}
+                                    className="h-8 w-8 shrink-0 rounded-md bg-white object-contain p-0.5"
+                                />
+                            ) : (
+                                <div
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-bold"
+                                    style={
+                                        isSchoolThemeActive
+                                            ? {
+                                                  backgroundColor: schoolTheme.primaryColor,
+                                                  color: schoolTheme.primaryForegroundColor,
+                                              }
+                                            : { backgroundColor: '#2563EB', color: '#FFFFFF' }
+                                    }
+                                    aria-hidden="true"
+                                >
+                                    {schoolDisplayName.trim().charAt(0).toUpperCase() || 'S'}
+                                </div>
+                            )}
+                            <span
+                                className="truncate text-base font-bold tracking-tight text-white"
+                                title={schoolDisplayName}
+                            >
+                                {schoolDisplayName}
+                            </span>
+                        </div>
+                    ) : (
+                        <span className="text-xl font-bold tracking-wider lg:mx-auto">Portal</span>
+                    )}
                     <button
                         ref={closeButtonRef}
                         type="button"
@@ -171,23 +249,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ id, isOpen, isDesktop, onClose
                         </svg>
                     </button>
                 </div>
-                <nav className="mt-6 flex flex-1 flex-col space-y-1 overflow-y-auto px-3" aria-label="Primary navigation">
-                    {filteredNavItems.map((item) => (
-                        <NavLink
-                            key={item.path}
-                            to={item.path}
-                            end={item.end}
-                            tabIndex={isMobileClosed ? -1 : undefined}
-                            onClick={() => onClose(false)}
-                            className={({ isActive }) =>
-                                `rounded-md px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${isActive
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                                }`
-                            }
-                        >
-                            {item.label}
-                        </NavLink>
+                <nav className="mt-4 flex flex-1 flex-col space-y-4 overflow-y-auto px-3 pb-4" aria-label="Primary navigation">
+                    {navGroups.map((group) => (
+                        <div key={group.section ?? '__ungrouped__'} className="flex flex-col space-y-1">
+                            {group.section && (
+                                <div className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                                    {group.section}
+                                </div>
+                            )}
+                            {group.items.map((item) => (
+                                <NavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    end={item.end}
+                                    tabIndex={isMobileClosed ? -1 : undefined}
+                                    onClick={() => onClose(false)}
+                                    style={({ isActive }) =>
+                                        isActive && isVerifiedSchoolPortal && isSchoolThemeActive
+                                            ? {
+                                                  backgroundColor: schoolTheme.primaryColor,
+                                                  color: schoolTheme.primaryForegroundColor,
+                                                  borderLeft: `3px solid ${schoolTheme.secondaryColor}`,
+                                              }
+                                            : undefined
+                                    }
+                                    className={({ isActive }) =>
+                                        `rounded-md px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                            isActive
+                                                ? isVerifiedSchoolPortal && isSchoolThemeActive
+                                                    ? ''
+                                                    : 'bg-blue-600 text-white'
+                                                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                                        }`
+                                    }
+                                >
+                                    {item.label}
+                                </NavLink>
+                            ))}
+                        </div>
                     ))}
                 </nav>
             </aside>

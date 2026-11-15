@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../../hooks/useAuth';
+import { SchoolAdminDashboardFinancialCard } from '../components/SchoolAdminDashboardFinancialCard';
 
 export const SchoolAdminDashboardPage: React.FC = () => {
     const { user } = useAuth();
@@ -13,6 +14,10 @@ export const SchoolAdminDashboardPage: React.FC = () => {
                 </p>
             </div>
 
+            {/* Financial Overview Integration (Step 5.11.5) */}
+            <SchoolAdminDashboardFinancialCard />
+
+            {/* Operational Domain Cards */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 sm:px-6">

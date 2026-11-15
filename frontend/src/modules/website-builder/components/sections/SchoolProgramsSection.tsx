@@ -1,14 +1,17 @@
 // frontend/src/modules/website-builder/components/sections/SchoolProgramsSection.tsx
 import React, { useState } from 'react';
+import { sanitizeSchoolAssetUrl } from '../../../../utils/branding';
 import type { FeaturedProgram } from '../../types/website.types';
 
 export interface SchoolProgramsSectionProps {
     programs: FeaturedProgram[];
+    heading?: string;
 }
 
 const ProgramCard: React.FC<{ program: FeaturedProgram }> = ({ program }) => {
-    const [imageError, setImageError] = useState(false);
-    const hasImage = Boolean(program.imageUrl && program.imageUrl.trim() !== '' && !imageError);
+    const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+    const sanitizedImageUrl = sanitizeSchoolAssetUrl(program.imageUrl);
+    const hasImage = Boolean(sanitizedImageUrl && failedImageUrl !== sanitizedImageUrl);
     const hasCategory = Boolean(program.category && program.category.trim() !== '');
 
     return (
@@ -16,13 +19,13 @@ const ProgramCard: React.FC<{ program: FeaturedProgram }> = ({ program }) => {
             className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow"
             aria-labelledby={`program-title-${program.id}`}
         >
-            {hasImage && (
+            {hasImage && sanitizedImageUrl && (
                 <div className="h-48 w-full overflow-hidden bg-gray-100">
                     <img
-                        src={program.imageUrl!.trim()}
+                        src={sanitizedImageUrl}
                         alt={program.title}
                         className="h-full w-full object-cover"
-                        onError={() => setImageError(true)}
+                        onError={() => setFailedImageUrl(sanitizedImageUrl)}
                     />
                 </div>
             )}
@@ -31,10 +34,11 @@ const ProgramCard: React.FC<{ program: FeaturedProgram }> = ({ program }) => {
                 {hasCategory && (
                     <div className="mb-2">
                         <span
-                            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
                             style={{
                                 color: 'var(--school-primary, #1E40AF)',
-                                backgroundColor: 'color-mix(in srgb, var(--school-primary, #1E40AF) 10%, transparent)',
+                                backgroundColor: 'var(--school-primary-soft, rgba(30, 64, 175, 0.1))',
+                                borderColor: 'var(--school-secondary, #3B82F6)',
                             }}
                         >
                             {program.category!.trim()}
@@ -57,8 +61,12 @@ const ProgramCard: React.FC<{ program: FeaturedProgram }> = ({ program }) => {
     );
 };
 
-export const SchoolProgramsSection: React.FC<SchoolProgramsSectionProps> = ({ programs }) => {
+export const SchoolProgramsSection: React.FC<SchoolProgramsSectionProps> = ({
+    programs,
+    heading,
+}) => {
     const hasPrograms = programs && programs.length > 0;
+    const sectionHeading = heading?.trim() || 'Featured Academic Programs';
 
     return (
         <section
@@ -72,7 +80,7 @@ export const SchoolProgramsSection: React.FC<SchoolProgramsSectionProps> = ({ pr
                         id="programs-heading"
                         className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl"
                     >
-                        Featured Academic Programs
+                        {sectionHeading}
                     </h2>
                     <p className="mt-4 text-base sm:text-lg text-gray-600">
                         Explore our featured curricula and academic pathways designed for student growth.

@@ -41,6 +41,13 @@ async function loadDevPlatformAdminAuth() {
     return import('../../modules/platform-admin/dev/platform-admin-dev-auth');
 }
 
+async function loadDevSchoolAdminAuth() {
+    if (!import.meta.env.DEV || !env.ENABLE_SCHOOL_DEV_AUTH) {
+        return null;
+    }
+    return import('../../modules/school-admin/dev/school-admin-dev-auth');
+}
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { classification, tenantId, isResolving } = useTenantContext();
     const [sessionState, setSessionState] = useState<AuthSessionState>({
@@ -59,6 +66,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         import.meta.env.DEV &&
         env.ENABLE_PLATFORM_ADMIN_DEV_AUTH &&
         classification === 'PLATFORM_ADMIN';
+    const isDevSchoolAuthActive =
+        import.meta.env.DEV &&
+        env.ENABLE_SCHOOL_DEV_AUTH &&
+        classification === 'SCHOOL';
 
     const targetContextKey = isPendingResolution
         ? null
@@ -111,6 +122,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (import.meta.env.DEV && isDevPlatformAuthActive) {
                     const devAuth = await loadDevPlatformAdminAuth();
                     userData = devAuth ? devAuth.getStoredDevPlatformAdminSession() : null;
+                } else if (import.meta.env.DEV && isDevSchoolAuthActive) {
+                    const devAuth = await loadDevSchoolAdminAuth();
+                    userData = devAuth ? devAuth.getStoredDevSchoolAdminSession(tenantId) : null;
                 } else {
                     userData = await getCurrentUser();
                 }
@@ -144,7 +158,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isActive = false;
             isMounted.current = false;
         };
-    }, [targetContextKey, isDevPlatformAuthActive, validateUserContext]);
+    }, [targetContextKey, isDevPlatformAuthActive, isDevSchoolAuthActive, tenantId, validateUserContext]);
 
     const login = useCallback(async (credentials: LoginRequest) => {
         if (isOperating.current) throw new Error('An authentication operation is already in progress.');
@@ -170,6 +184,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     throw new Error('Development authentication module is unavailable.');
                 }
                 userData = devAuth.authenticateDevPlatformAdmin(credentials);
+            } else if (import.meta.env.DEV && isDevSchoolAuthActive) {
+                const devAuth = await loadDevSchoolAdminAuth();
+                if (!devAuth) {
+                    throw new Error('Development authentication module is unavailable.');
+                }
+                userData = devAuth.authenticateDevSchoolAdmin(credentials, tenantId);
             } else {
                 await apiLogin(credentials);
                 userData = await getCurrentUser();
@@ -190,7 +210,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error: unknown) {
             // Attempt to clean up backend session if frontend validation fails (real auth only)
             if (
-                !(import.meta.env.DEV && isDevPlatformAuthActive) &&
+                !(import.meta.env.DEV && (isDevPlatformAuthActive || isDevSchoolAuthActive)) &&
                 error instanceof Error &&
                 error.message.startsWith('Access Denied')
             ) {
@@ -208,7 +228,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } finally {
             isOperating.current = false;
         }
-    }, [targetContextKey, isDevPlatformAuthActive, validateUserContext]);
+    }, [targetContextKey, isDevPlatformAuthActive, isDevSchoolAuthActive, tenantId, validateUserContext]);
 
     // Register and logout remain largely unchanged, just relying on apiRegister/apiLogout
     const register = useCallback(async (data: RegisterRequest) => {
@@ -229,6 +249,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (import.meta.env.DEV && isDevPlatformAuthActive) {
                 const devAuth = await loadDevPlatformAdminAuth();
                 devAuth?.clearDevPlatformAdminSession();
+            } else if (import.meta.env.DEV && isDevSchoolAuthActive) {
+                const devAuth = await loadDevSchoolAdminAuth();
+                devAuth?.clearDevSchoolAdminSession();
             } else {
                 await apiLogout();
             }
@@ -243,7 +266,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } finally {
             isOperating.current = false;
         }
-    }, [targetContextKey, isDevPlatformAuthActive]);
+    }, [targetContextKey, isDevPlatformAuthActive, isDevSchoolAuthActive]);
 
     const user =
         targetContextKey !== null && sessionState.contextKey === targetContextKey

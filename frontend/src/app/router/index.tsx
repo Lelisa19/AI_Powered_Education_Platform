@@ -24,16 +24,15 @@ const AcceptPlatformInvitationPage = lazy(() =>
 // School Pages
 import LoginPage from '../../modules/auth/pages/LoginPage';
 import RegisterPage from '../../modules/auth/pages/RegisterPage';
+import { ForgotPasswordPage } from '../../modules/auth/pages/ForgotPasswordPage';
 import { StaffInvitePage } from '../../modules/auth/pages/StaffInvitePage';
 import { SchoolLandingPage } from '../../modules/website-builder/pages/SchoolLandingPage';
-// Placeholders for future School flows
-const ForgotPasswordPage = () => <div className="p-8 text-center">Forgot Password (Pending Implementation)</div>;
 
 // School Dashboards
 import { SchoolAdminRoutes } from './school-admin.routes';
 import { TeacherDashboardPage } from '../../modules/teachers/pages/TeacherDashboardPage';
 import { StudentDashboardPage } from '../../modules/students/pages/StudentDashboardPage';
-import { AccountantDashboardPage } from '../../modules/accountants/pages/AccountantDashboardPage';
+import { AccountantRoutes } from './accountant.routes';
 
 // Fallback components
 const NotFound: React.FC = () => (
@@ -123,7 +122,7 @@ const SchoolRouter = () => (
           <Route path="/student/*" element={<StudentDashboardPage />} />
         </Route>
         <Route element={<RoleGuard roles={['SCHOOL_ACCOUNTANT']} />}>
-          <Route path="/accountant/*" element={<AccountantDashboardPage />} />
+          <Route path="/accountant/*" element={<AccountantRoutes />} />
         </Route>
       </Route>
     </Route>

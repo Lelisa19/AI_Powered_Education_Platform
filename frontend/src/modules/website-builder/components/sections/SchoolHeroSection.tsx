@@ -1,15 +1,50 @@
 // frontend/src/modules/website-builder/components/sections/SchoolHeroSection.tsx
 import React, { useState } from 'react';
+import { sanitizeSchoolAssetUrl, sanitizeWebsiteCtaUrl } from '../../../../utils/branding';
 import type { SchoolHeroSection as SchoolHeroSectionData } from '../../types/website.types';
 
 export interface SchoolHeroSectionProps {
     hero: SchoolHeroSectionData;
+    previewMode?: boolean;
 }
 
-export const SchoolHeroSection: React.FC<SchoolHeroSectionProps> = ({ hero }) => {
-    const [imageError, setImageError] = useState(false);
-    const hasImage = Boolean(hero.imageUrl && hero.imageUrl.trim() !== '' && !imageError);
+export const SchoolHeroSection: React.FC<SchoolHeroSectionProps> = ({
+    hero,
+    previewMode = false,
+}) => {
+    const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+    const sanitizedImageUrl = sanitizeSchoolAssetUrl(hero.imageUrl);
+    const hasImage = Boolean(sanitizedImageUrl && failedImageUrl !== sanitizedImageUrl);
     const hasSubtitle = Boolean(hero.subtitle && hero.subtitle.trim() !== '');
+    const headlineText =
+        hero.headline && hero.headline.trim() !== ''
+            ? hero.headline.trim()
+            : 'Welcome to Our School';
+
+    const customCtaUrl = sanitizeWebsiteCtaUrl(hero.ctaUrl);
+    const customCtaText = hero.ctaText?.trim();
+    const primaryCtaLabel = customCtaText && customCtaUrl ? customCtaText : 'Explore Programs';
+    const primaryCtaHref = customCtaText && customCtaUrl ? customCtaUrl : '#programs';
+    const isExternalCta = primaryCtaHref.startsWith('https://');
+
+    const handleCtaClick = (
+        event: React.MouseEvent<HTMLAnchorElement>,
+        href: string
+    ) => {
+        if (!previewMode) return;
+
+        if (href.startsWith('#')) {
+            event.preventDefault();
+            const root = event.currentTarget.closest('[data-website-preview-root="true"]');
+            const target = root?.querySelector(href);
+            if (target && typeof target.scrollIntoView === 'function') {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            return;
+        }
+
+        event.preventDefault();
+    };
 
     return (
         <section
@@ -22,42 +57,55 @@ export const SchoolHeroSection: React.FC<SchoolHeroSectionProps> = ({ hero }) =>
                     {/* Hero Text Content */}
                     <div>
                         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl lg:text-5xl leading-tight">
-                            {hero.headline}
+                            {headlineText}
                         </h1>
 
                         {hasSubtitle && (
-                            <p className="mt-6 text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl">
-                                {hero.subtitle}
+                            <p className={`mt-6 text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl ${hasImage ? '' : 'mx-auto'}`}>
+                                {hero.subtitle!.trim()}
                             </p>
                         )}
 
-                        {/* In-page public navigation actions */}
+                        {/* In-page or configured CTA navigation actions */}
                         <div className={`mt-8 flex flex-wrap gap-4 ${hasImage ? '' : 'justify-center'}`}>
                             <a
-                                href="#programs"
-                                className="inline-flex items-center justify-center rounded-lg px-6 py-3 text-base font-semibold text-white shadow-sm hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2"
-                                style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                href={primaryCtaHref}
+                                target={isExternalCta ? '_blank' : undefined}
+                                rel={isExternalCta ? 'noopener noreferrer' : undefined}
+                                onClick={(e) => handleCtaClick(e, primaryCtaHref)}
+                                title={
+                                    previewMode && !primaryCtaHref.startsWith('#')
+                                        ? `CTA destination preview: ${primaryCtaHref}`
+                                        : undefined
+                                }
+                                className="inline-flex items-center justify-center rounded-lg px-6 py-3 text-base font-semibold shadow-sm hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                style={{
+                                    backgroundColor: 'var(--school-primary, #1E40AF)',
+                                    color: 'var(--school-primary-foreground, #FFFFFF)',
+                                }}
                             >
-                                Explore Programs
+                                {primaryCtaLabel}
                             </a>
                             <a
                                 href="#about"
-                                className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-6 py-3 text-base font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                onClick={(e) => handleCtaClick(e, '#about')}
+                                className="inline-flex items-center justify-center rounded-lg border-2 bg-white px-6 py-3 text-base font-semibold text-gray-800 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                style={{ borderColor: 'var(--school-secondary, #3B82F6)' }}
                             >
                                 Learn More
                             </a>
                         </div>
                     </div>
 
-                    {/* Hero Image (if available and loaded successfully) */}
-                    {hasImage && (
+                    {/* Hero Image (if valid and loaded successfully) */}
+                    {hasImage && sanitizedImageUrl && (
                         <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
                             <div className="overflow-hidden rounded-2xl shadow-xl ring-1 ring-gray-900/10 aspect-[4/3] bg-gray-100">
                                 <img
-                                    src={hero.imageUrl!.trim()}
-                                    alt={hero.headline}
+                                    src={sanitizedImageUrl}
+                                    alt={headlineText}
                                     className="h-full w-full object-cover"
-                                    onError={() => setImageError(true)}
+                                    onError={() => setFailedImageUrl(sanitizedImageUrl)}
                                 />
                             </div>
                         </div>

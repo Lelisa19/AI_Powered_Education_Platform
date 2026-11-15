@@ -48,7 +48,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ redirectTo }) =>
 
 export const PublicRoute: React.FC = () => {
     const { user, isAuthenticated, isLoading } = useAuth();
-    const { classification } = useTenantContext();
+    const { classification, tenantId } = useTenantContext();
     const location = useLocation();
 
     if (isLoading) {
@@ -58,8 +58,8 @@ export const PublicRoute: React.FC = () => {
     if (isAuthenticated) {
         const rawFrom = (location.state as { from?: unknown } | null)?.from;
         const destination =
-            getAuthorizedRedirectPath(rawFrom, user, classification) ??
-            getDefaultDashboard(user, classification);
+            getAuthorizedRedirectPath(rawFrom, user, classification, tenantId) ??
+            getDefaultDashboard(user, classification, tenantId);
         return <Navigate to={destination} replace />;
     }
 
@@ -73,11 +73,11 @@ interface RoleGuardProps {
 export const RoleGuard: React.FC<RoleGuardProps> = ({ roles }) => {
     const { user } = useAuth();
     const { hasAnyRole } = usePermissions();
-    const { classification } = useTenantContext();
+    const { classification, tenantId } = useTenantContext();
     const location = useLocation();
 
     if (!hasAnyRole(roles)) {
-        const defaultDashboard = getDefaultDashboard(user, classification);
+        const defaultDashboard = getDefaultDashboard(user, classification, tenantId);
 
         // Prevent infinite redirect loops if the user lacks access to their own default dashboard
         if (location.pathname === defaultDashboard) {
@@ -103,7 +103,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
 }) => {
     const { user } = useAuth();
     const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions();
-    const { classification } = useTenantContext();
+    const { classification, tenantId } = useTenantContext();
     const location = useLocation();
 
     let isAuthorized = false;
@@ -115,7 +115,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
     }
 
     if (!isAuthorized) {
-        const defaultDashboard = getDefaultDashboard(user, classification);
+        const defaultDashboard = getDefaultDashboard(user, classification, tenantId);
 
         // Prevent infinite redirect loops if the user lacks access to their own default dashboard
         if (location.pathname === defaultDashboard) {

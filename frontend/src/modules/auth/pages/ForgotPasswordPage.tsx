@@ -39,21 +39,30 @@ export const ForgotPasswordPage: React.FC = () => {
     return (
         <div className="flex min-h-screen flex-col justify-center bg-gray-50 py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-                <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">Reset Password</h2>
+                <h1 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">Reset Password</h1>
             </div>
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white px-4 py-8 shadow-sm sm:rounded-lg sm:px-10 border border-gray-200">
-                    {status === 'error' && <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-700 border border-red-200">{message}</div>}
+                    {!isEndpointImplemented && (
+                        <div
+                            role="status"
+                            className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+                        >
+                            Password recovery is currently unavailable pending backend integration. Please contact your school administrator for password assistance.
+                        </div>
+                    )}
+                    {status === 'error' && <div role="alert" className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-700 border border-red-200">{message}</div>}
                     {status === 'success' ? (
                         <div className="text-center">
-                            <div className="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-700 border border-green-200">{message}</div>
+                            <div role="status" className="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-700 border border-green-200">{message}</div>
                             <Link to="/login" className="text-sm font-medium text-blue-600 hover:text-blue-500">Return to Login</Link>
                         </div>
                     ) : (
                         <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Email address</label>
+                                <label htmlFor="forgot-password-email" className="block text-sm font-medium text-gray-700">Email address</label>
                                 <input
+                                    id="forgot-password-email"
                                     type="email"
                                     required
                                     value={email}

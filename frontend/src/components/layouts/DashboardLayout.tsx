@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTheme } from '../../app/providers/ThemeProvider';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 
 const SIDEBAR_ID = 'dashboard-sidebar';
 const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';
 
-export const DashboardLayout: React.FC = () => {
+interface DashboardLayoutProps {
+    notificationSlot?: React.ReactNode;
+}
+
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ notificationSlot }) => {
+    const { isSchoolThemeActive, brandCssVariables } = useTheme();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isDesktop, setIsDesktop] = useState<boolean>(() =>
         typeof window !== 'undefined' ? window.matchMedia(DESKTOP_MEDIA_QUERY).matches : true
@@ -101,6 +107,7 @@ export const DashboardLayout: React.FC = () => {
 
     return (
         <div
+            style={isSchoolThemeActive ? brandCssVariables : undefined}
             className={`flex bg-gray-50 ${
                 isMobileOpen ? 'h-dvh overflow-hidden' : 'min-h-dvh lg:h-dvh lg:overflow-hidden'
             }`}
@@ -122,6 +129,7 @@ export const DashboardLayout: React.FC = () => {
                     isSidebarOpen={isSidebarOpen}
                     sidebarId={SIDEBAR_ID}
                     toggleButtonRef={toggleButtonRef}
+                    notificationSlot={notificationSlot}
                 />
 
                 <main className="flex-1 p-4 sm:p-6 lg:overflow-y-auto lg:p-8">

@@ -6,32 +6,66 @@ import type { SchoolIdentity } from '../../types/website.types';
 
 export interface SchoolHeaderProps {
     identity: SchoolIdentity;
+    previewMode?: boolean;
 }
 
-export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity }) => {
+export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity, previewMode = false }) => {
     const { allowsPublicRegistration } = useTenantContext();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
 
     const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
+    const showLogo = Boolean(identity.logoUrl && failedLogoUrl !== identity.logoUrl);
+
+    const handlePreviewRouteClick = (event: React.MouseEvent) => {
+        closeMobileMenu();
+        if (previewMode) {
+            event.preventDefault();
+        }
+    };
+
+    const handleAnchorClick = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+        closeMobileMenu();
+        if (!previewMode) return;
+        event.preventDefault();
+        const root = event.currentTarget.closest('[data-website-preview-root="true"]');
+        const target = root?.querySelector(`#${sectionId}`);
+        if (target && typeof target.scrollIntoView === 'function') {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
 
     return (
-        <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur shadow-sm">
+        <header
+            className={`${
+                previewMode ? 'relative z-10' : 'sticky top-0 z-40'
+            } border-b border-gray-200 bg-white/95 backdrop-blur shadow-sm`}
+        >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     {/* School Identity: Logo & Name */}
                     <div className="flex items-center space-x-3">
-                        <Link to="/" className="flex items-center space-x-3 focus:outline-none" onClick={closeMobileMenu}>
-                            {identity.logoUrl ? (
+                        <Link
+                            to="/"
+                            className="flex items-center space-x-3 focus:outline-none"
+                            onClick={handlePreviewRouteClick}
+                            title={previewMode ? 'Preview navigation disabled in CMS preview' : undefined}
+                        >
+                            {showLogo ? (
                                 <img
                                     src={identity.logoUrl}
                                     alt={`${identity.name} Logo`}
+                                    onError={() => setFailedLogoUrl(identity.logoUrl ?? null)}
                                     className="h-10 w-auto max-w-[140px] object-contain"
                                 />
                             ) : (
                                 <div
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white shadow-sm"
-                                    style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg font-bold shadow-sm"
+                                    style={{
+                                        backgroundColor: 'var(--school-primary, #1E40AF)',
+                                        color: 'var(--school-primary-foreground, #FFFFFF)',
+                                    }}
                                     aria-hidden="true"
                                 >
                                     {identity.name ? identity.name.trim().charAt(0).toUpperCase() : 'S'}
@@ -45,13 +79,25 @@ export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity }) => {
 
                     {/* Desktop Navigation Links */}
                     <nav className="hidden md:flex md:items-center md:space-x-8" aria-label="Main Navigation">
-                        <a href="#about" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                        <a
+                            href="#about"
+                            onClick={(e) => handleAnchorClick(e, 'about')}
+                            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                        >
                             About
                         </a>
-                        <a href="#programs" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                        <a
+                            href="#programs"
+                            onClick={(e) => handleAnchorClick(e, 'programs')}
+                            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                        >
                             Programs
                         </a>
-                        <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                        <a
+                            href="#contact"
+                            onClick={(e) => handleAnchorClick(e, 'contact')}
+                            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                        >
                             Contact
                         </a>
                     </nav>
@@ -60,6 +106,8 @@ export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity }) => {
                     <div className="hidden md:flex md:items-center md:space-x-4">
                         <Link
                             to="/login"
+                            onClick={handlePreviewRouteClick}
+                            title={previewMode ? 'Login link disabled in CMS preview' : undefined}
                             className="rounded-md px-3.5 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                         >
                             Login
@@ -68,8 +116,13 @@ export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity }) => {
                         {allowsPublicRegistration && (
                             <Link
                                 to="/register"
-                                className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-opacity"
-                                style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                onClick={handlePreviewRouteClick}
+                                title={previewMode ? 'Registration link disabled in CMS preview' : undefined}
+                                className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-opacity"
+                                style={{
+                                    backgroundColor: 'var(--school-primary, #1E40AF)',
+                                    color: 'var(--school-primary-foreground, #FFFFFF)',
+                                }}
                             >
                                 Student Registration
                             </Link>
@@ -104,21 +157,21 @@ export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity }) => {
                     <nav className="flex flex-col space-y-2" aria-label="Mobile Navigation">
                         <a
                             href="#about"
-                            onClick={closeMobileMenu}
+                            onClick={(e) => handleAnchorClick(e, 'about')}
                             className="rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
                         >
                             About
                         </a>
                         <a
                             href="#programs"
-                            onClick={closeMobileMenu}
+                            onClick={(e) => handleAnchorClick(e, 'programs')}
                             className="rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
                         >
                             Programs
                         </a>
                         <a
                             href="#contact"
-                            onClick={closeMobileMenu}
+                            onClick={(e) => handleAnchorClick(e, 'contact')}
                             className="rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100"
                         >
                             Contact
@@ -128,7 +181,7 @@ export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity }) => {
                     <div className="mt-4 border-t border-gray-200 pt-4 flex flex-col space-y-2">
                         <Link
                             to="/login"
-                            onClick={closeMobileMenu}
+                            onClick={handlePreviewRouteClick}
                             className="w-full text-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
                         >
                             Login
@@ -137,9 +190,12 @@ export const SchoolHeader: React.FC<SchoolHeaderProps> = ({ identity }) => {
                         {allowsPublicRegistration && (
                             <Link
                                 to="/register"
-                                onClick={closeMobileMenu}
-                                className="w-full text-center rounded-md px-4 py-2 text-base font-medium text-white shadow-sm hover:opacity-90 transition-opacity"
-                                style={{ backgroundColor: 'var(--school-primary, #1E40AF)' }}
+                                onClick={handlePreviewRouteClick}
+                                className="w-full text-center rounded-md px-4 py-2 text-base font-medium shadow-sm hover:opacity-90 transition-opacity"
+                                style={{
+                                    backgroundColor: 'var(--school-primary, #1E40AF)',
+                                    color: 'var(--school-primary-foreground, #FFFFFF)',
+                                }}
                             >
                                 Student Registration
                             </Link>
