@@ -62,6 +62,34 @@ export const DEV_SCHOOL_ADMIN_FIXTURES: readonly DevSchoolAdminFixture[] = [
     },
 ];
 
+const ACCOUNTANT_PERMISSIONS: readonly PermissionKey[] = [
+    PERMISSIONS.PAYMENTS.READ,
+    PERMISSIONS.PAYMENTS.CREATE,
+    PERMISSIONS.PAYMENTS.VERIFY,
+    PERMISSIONS.PAYMENTS.REJECT,
+    PERMISSIONS.REPORTS.READ,
+    PERMISSIONS.REPORTS.EXPORT,
+    PERMISSIONS.STUDENTS.READ,
+];
+
+export const DEV_SCHOOL_ACCOUNTANT_FIXTURE: DevSchoolAdminFixture = {
+    id: 'dev-school-accountant',
+    email: 'accountant@school.local.test',
+    password: 'LocalAccountant2026!',
+    firstName: 'School',
+    lastName: 'Accountant',
+    tenantId: DEV_SCHOOL_TENANT_ID,
+    roles: ['SCHOOL_ACCOUNTANT'],
+    permissions: ACCOUNTANT_PERMISSIONS,
+    label: 'School Accountant',
+    description: 'School financial management, payment verification, student balances, and financial reporting.',
+};
+
+export const ALL_DEV_SCHOOL_FIXTURES: readonly DevSchoolAdminFixture[] = [
+    ...DEV_SCHOOL_ADMIN_FIXTURES,
+    DEV_SCHOOL_ACCOUNTANT_FIXTURE,
+];
+
 function assertDevelopmentMode(): void {
     if (!import.meta.env.DEV) {
         throw new Error('Development authentication is only available in development mode.');
@@ -129,7 +157,7 @@ export function getStoredDevSchoolAdminSession(
         return null;
     }
 
-    const fixture = DEV_SCHOOL_ADMIN_FIXTURES.find((item) => item.id === storedId);
+    const fixture = ALL_DEV_SCHOOL_FIXTURES.find((item) => item.id === storedId);
     if (!fixture) {
         clearDevSchoolAdminSession();
         return null;
@@ -150,7 +178,7 @@ export function authenticateDevSchoolAdmin(
     assertDevelopmentMode();
 
     const normalizedEmail = credentials.email.trim().toLowerCase();
-    const fixture = DEV_SCHOOL_ADMIN_FIXTURES.find(
+    const fixture = ALL_DEV_SCHOOL_FIXTURES.find(
         (item) => item.email === normalizedEmail && item.password === credentials.password
     );
 

@@ -1,5 +1,9 @@
 import React from 'react';
-import type { PaymentMethod, PaymentStatus } from '../types/accountant.types';
+import type {
+    FeeAssignmentStatus,
+    PaymentMethod,
+    PaymentStatus,
+} from '../types/accountant.types';
 
 interface PaymentStatusBadgeProps {
     status: PaymentStatus;
@@ -86,6 +90,105 @@ export const PaymentMethodBadge: React.FC<PaymentMethodBadgeProps> = ({ method, 
             className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${config.badgeClasses} ${className}`}
         >
             {config.label}
+        </span>
+    );
+};
+
+interface FeeAssignmentStatusBadgeProps {
+    status: FeeAssignmentStatus;
+    className?: string;
+}
+
+const FEE_STATUS_CONFIG: Record<
+    FeeAssignmentStatus,
+    { label: string; badgeClasses: string; dotClasses: string }
+> = {
+    PAID: {
+        label: 'Paid',
+        badgeClasses: 'border-green-200 bg-green-50 text-green-700',
+        dotClasses: 'bg-green-500',
+    },
+    PARTIALLY_PAID: {
+        label: 'Partially Paid',
+        badgeClasses: 'border-blue-200 bg-blue-50 text-blue-700',
+        dotClasses: 'bg-blue-500',
+    },
+    UNPAID: {
+        label: 'Unpaid',
+        badgeClasses: 'border-gray-200 bg-gray-50 text-gray-700',
+        dotClasses: 'bg-gray-400',
+    },
+    OVERDUE: {
+        label: 'Overdue',
+        badgeClasses: 'border-red-200 bg-red-50 text-red-700',
+        dotClasses: 'bg-red-500',
+    },
+    WAIVED: {
+        label: 'Waived',
+        badgeClasses: 'border-purple-200 bg-purple-50 text-purple-700',
+        dotClasses: 'bg-purple-500',
+    },
+};
+
+export const FeeAssignmentStatusBadge: React.FC<FeeAssignmentStatusBadgeProps> = ({
+    status,
+    className = '',
+}) => {
+    const config = FEE_STATUS_CONFIG[status] ?? {
+        label: status,
+        badgeClasses: 'border-gray-200 bg-gray-50 text-gray-700',
+        dotClasses: 'bg-gray-400',
+    };
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${config.badgeClasses} ${className}`}
+        >
+            <span className={`h-1.5 w-1.5 rounded-full ${config.dotClasses}`} aria-hidden="true" />
+            {config.label}
+        </span>
+    );
+};
+
+interface BalanceStatusBadgeProps {
+    outstandingBalance: number;
+    isOverdue?: boolean;
+    className?: string;
+}
+
+export const BalanceStatusBadge: React.FC<BalanceStatusBadgeProps> = ({
+    outstandingBalance,
+    isOverdue,
+    className = '',
+}) => {
+    if (outstandingBalance <= 0) {
+        return (
+            <span
+                className={`inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ${className}`}
+            >
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true" />
+                Cleared
+            </span>
+        );
+    }
+
+    if (isOverdue) {
+        return (
+            <span
+                className={`inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ${className}`}
+            >
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />
+                Overdue
+            </span>
+        );
+    }
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ${className}`}
+        >
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-hidden="true" />
+            Outstanding
         </span>
     );
 };

@@ -245,6 +245,18 @@ export interface FeeAssignmentListResponse {
     pagination?: PaginationMeta;
 }
 
+export interface ListStudentBalancesQuery {
+    page?: number;
+    limit?: number;
+    search?: string;
+    isOverdue?: boolean;
+}
+
+export interface StudentBalanceListResponse {
+    items: StudentBalanceSummary[];
+    pagination?: PaginationMeta;
+}
+
 /**
  * High-level school financial aggregation metrics for Accountant overview.
  */

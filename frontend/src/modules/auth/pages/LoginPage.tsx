@@ -95,7 +95,7 @@ const LoginPage: React.FC = () => {
                                 Development Test Accounts
                             </div>
                             <p className="mt-1 text-[11px] text-amber-700">
-                                Local frontend testing fixtures (password: <code className="font-mono text-[10px] font-bold">LocalSchoolAdmin2026!</code> / <code className="font-mono text-[10px] font-bold">LocalRestrictedAdmin2026!</code>)
+                                Local frontend testing fixtures (password: <code className="font-mono text-[10px] font-bold">LocalSchoolAdmin2026!</code> / <code className="font-mono text-[10px] font-bold">LocalRestrictedAdmin2026!</code> / <code className="font-mono text-[10px] font-bold">LocalAccountant2026!</code>)
                             </p>
                             <div className="mt-2.5 flex flex-col gap-1.5 sm:flex-row">
                                 <button
@@ -111,6 +111,13 @@ const LoginPage: React.FC = () => {
                                     className="flex-1 rounded border border-amber-300 bg-white px-2.5 py-1 text-center text-xs font-medium text-amber-900 shadow-sm hover:bg-amber-100/60 focus:outline-none"
                                 >
                                     Restricted Admin
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectDevAccount('accountant@school.local.test', 'LocalAccountant2026!')}
+                                    className="flex-1 rounded border border-amber-300 bg-white px-2.5 py-1 text-center text-xs font-medium text-amber-900 shadow-sm hover:bg-amber-100/60 focus:outline-none"
+                                >
+                                    Accountant
                                 </button>
                             </div>
                         </div>

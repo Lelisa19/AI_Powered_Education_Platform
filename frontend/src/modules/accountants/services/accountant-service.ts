@@ -20,6 +20,7 @@ import type {
     FinancialReportSummary,
     ListFeeAssignmentsQuery,
     ListPaymentsQuery,
+    ListStudentBalancesQuery,
     PaymentAuditSummary,
     PaymentListResponse,
     PaymentMethod,
@@ -30,6 +31,7 @@ import type {
     PaymentVerificationMetadata,
     PaymentVerificationRequest,
     PaymentVerificationResponse,
+    StudentBalanceListResponse,
     StudentBalanceSummary,
     StudentPaymentHistoryResponse,
 } from '../types/accountant.types';
@@ -725,6 +727,81 @@ export async function getStudentBalanceSummary(
 }
 
 /**
+ * Lists student balance summaries across the school.
+ * Uses API_ENDPOINTS.FINANCE.BALANCES ('/finance/balances').
+ * Requires `payments.read` and `students.read`.
+ */
+export async function listStudentBalances(
+    query: ListStudentBalancesQuery,
+    expectedTenantId: string | null,
+    actor: AuthenticatedUser | null,
+    signal?: AbortSignal
+): Promise<StudentBalanceListResponse> {
+    assertFinanceActorAuthorizedAny(actor, expectedTenantId, [
+        PERMISSIONS.PAYMENTS.READ,
+        PERMISSIONS.STUDENTS.READ,
+    ]);
+
+    const params: Record<string, string | number | boolean> = {};
+    if (query.page !== undefined) params.page = query.page;
+    if (query.limit !== undefined) params.limit = query.limit;
+    if (query.search && query.search.trim() !== '') params.search = query.search.trim();
+    if (query.isOverdue !== undefined) params.isOverdue = query.isOverdue;
+
+    try {
+        const response = await apiClient.get<unknown>(API_ENDPOINTS.FINANCE.BALANCES, {
+            params,
+            signal,
+        });
+        const payload = response.data;
+
+        if (Array.isArray(payload)) {
+            const items = payload.map((item) => parseStudentBalanceSummary(item));
+            return {
+                items,
+                pagination: parsePaginationMeta(
+                    undefined,
+                    items.length,
+                    query.page,
+                    query.limit
+                ),
+            };
+        }
+
+        if (!isPlainObject(payload)) {
+            throw new ApiError('Invalid backend student balance list response.', 502);
+        }
+        assertNoExposedSensitiveFields(payload, 'Student balance list');
+
+        const rawItems = Array.isArray(payload.balances)
+            ? payload.balances
+            : Array.isArray(payload.items)
+              ? payload.items
+              : null;
+
+        if (!rawItems) {
+            throw new ApiError(
+                'Backend student balance list response did not contain items array.',
+                502
+            );
+        }
+
+        const items = rawItems.map((item) => parseStudentBalanceSummary(item));
+        return {
+            items,
+            pagination: parsePaginationMeta(
+                payload.pagination,
+                items.length,
+                query.page,
+                query.limit
+            ),
+        };
+    } catch (error: unknown) {
+        rethrowNormalizedApiError(error);
+    }
+}
+
+/**
  * Lists fee assignments across students.
  * Requires `payments.read`.
  */
@@ -939,6 +1016,11 @@ export async function uploadPaymentReceipt(
     }
 }
 
+export interface FinancialReportQueryParams {
+    startDate?: string;
+    endDate?: string;
+}
+
 /**
  * Retrieves aggregate financial summary metrics for the school.
  * Requires `reports.read`.
@@ -946,12 +1028,22 @@ export async function uploadPaymentReceipt(
 export async function getFinancialReportSummary(
     expectedTenantId: string | null,
     actor: AuthenticatedUser | null,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    queryParams?: FinancialReportQueryParams
 ): Promise<FinancialReportSummary> {
     assertFinanceActorAuthorizedAny(actor, expectedTenantId, [PERMISSIONS.REPORTS.READ]);
 
+    const params: Record<string, string> = {};
+    if (queryParams?.startDate && queryParams.startDate.trim() !== '') {
+        params.startDate = queryParams.startDate.trim();
+    }
+    if (queryParams?.endDate && queryParams.endDate.trim() !== '') {
+        params.endDate = queryParams.endDate.trim();
+    }
+
     try {
         const response = await apiClient.get<unknown>(API_ENDPOINTS.FINANCE.REPORTS_SUMMARY, {
+            params: Object.keys(params).length > 0 ? params : undefined,
             signal,
         });
         const payload = response.data;
